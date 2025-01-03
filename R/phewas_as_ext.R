@@ -1,6 +1,6 @@
-#'
 #' ProcWAS using generalized linear model
-#'Called within the phewas_ext() function to perform ProcWAS analysis using a generalized linear model (“glm”). For more details on arguments/outputs of PheWAS, see the phewas_ext() function.
+#' 
+#' Called within the phewas_ext() function to perform ProcWAS analysis using a generalized linear model (“glm”). For more details on arguments/outputs of PheWAS, see the phewas_ext() function.
 #' 
 #' @return phenotype-significance Manhattan plot to its parent function
 #' @source https://github.com/monikagrabowska/PedsPheWAS/blob/main/R/phe_as_ext.R

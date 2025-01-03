@@ -1,5 +1,5 @@
-#'
 #' Performs ProcWAS
+#' 
 #' This function perofrms ProcWAS using generalized linear model with optional adjustment for user-specified covariates
 #' 
 #' @param phenotypes The names of the outcome variables (i.e., the procedures)

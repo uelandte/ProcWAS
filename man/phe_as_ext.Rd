@@ -2,8 +2,7 @@
 % Please edit documentation in R/phewas_as_ext.R
 \name{phe_as_ext}
 \alias{phe_as_ext}
-\title{ProcWAS using generalized linear model
-Called within the phewas_ext() function to perform ProcWAS analysis using a generalized linear model (“glm”). For more details on arguments/outputs of PheWAS, see the phewas_ext() function.}
+\title{ProcWAS using generalized linear model}
 \source{
 https://github.com/monikagrabowska/PedsPheWAS/blob/main/R/phe_as_ext.R
 
@@ -25,6 +24,5 @@ phe_as_ext(
 phenotype-significance Manhattan plot to its parent function
 }
 \description{
-ProcWAS using generalized linear model
 Called within the phewas_ext() function to perform ProcWAS analysis using a generalized linear model (“glm”). For more details on arguments/outputs of PheWAS, see the phewas_ext() function.
 }

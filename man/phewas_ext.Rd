@@ -2,8 +2,7 @@
 % Please edit documentation in R/phewas_ext.R
 \name{phewas_ext}
 \alias{phewas_ext}
-\title{Performs ProcWAS
-This function perofrms ProcWAS using generalized linear model with optional adjustment for user-specified covariates}
+\title{Performs ProcWAS}
 \source{
 https://github.com/monikagrabowska/PedsPheWAS/blob/main/R/phewas_ext.R
 
@@ -45,6 +44,5 @@ phewas_ext(
 Returns a data frame containing the results of the PheWAS analysis (e.g., a data frame with the following columns: phenotype, snp, covariates, beta, SE, OR, p, type, n_total, n_cases, n_controls, HWE_p, allele_freq, n_no_snp, formula, expanded_formula, note).
 }
 \description{
-Performs ProcWAS
 This function perofrms ProcWAS using generalized linear model with optional adjustment for user-specified covariates
 }
