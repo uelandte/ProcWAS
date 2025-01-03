@@ -96,7 +96,7 @@ results <- phewas_ext(data = phewas_df,
 ```
 
 
-```{r manhattan, echo = FALSE, out.width = "50%"}
+```{r manhattan, echo = FALSE, out.width = "70%"}
 manhattan <- plotManhattan(results,
                            suggestive.line = NA,
                            significant.line = 0.05 / nrow(results),

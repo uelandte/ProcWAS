@@ -136,4 +136,4 @@ results <- phewas_ext(data = phewas_df,
 #> Cleaning up...
 ```
 
-<img src="man/figures/README-manhattan-1.png" width="50%" />
+<img src="man/figures/README-manhattan-1.png" width="70%" />
