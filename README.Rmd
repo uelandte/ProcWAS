@@ -103,5 +103,5 @@ manhattan <- plotManhattan(results,
                            annotate.level = 0.05 / nrow(results),
                            point.size = 2,
                            annotate.size = 3.5)
-plot(pressure)
+plot(manhattan)
 ```
