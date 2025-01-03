@@ -2,7 +2,7 @@
 
 export(apply_sex_specific_exclusions)
 export(create_ccsr_phenotypes)
-export(merge_pheno_with_cov)
+export(merge_pheno_with_full_pop_cov)
 export(phe_as_ext)
 export(phenotypePlot)
 export(phewas_ext)
@@ -13,4 +13,3 @@ import(parallel)
 import(tidyr)
 importFrom(ggrepel,geom_text_repel)
 importFrom(glue,glue)
-importFrom(stats,confint)
