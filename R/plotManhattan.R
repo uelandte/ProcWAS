@@ -56,4 +56,3 @@ plotManhattan <-
                        y.axis.interval=y.axis.interval,
                        ...)   
   }
-#' @param 

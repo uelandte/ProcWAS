@@ -18,7 +18,9 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of ProcWAS is to adapt existing functionality from a Phenome-wide Association Study (PheWAS) to procedures.
+## Description
+
+The goal of the ProcWAS package is to adapt existing functionality from the Phenome-wide Association Study (PheWAS) package for procedural applications.
 
 
 ## Installation
@@ -26,15 +28,40 @@ The goal of ProcWAS is to adapt existing functionality from a Phenome-wide Assoc
 You can install the development version of ProcWAS like so:
 
 ``` r
+# install and load required packages 
+reqd_packages <- c("dplyr", "tidyr", "glue", "parallel", "devtools", "ggplot2", "ggrepel", "devtools")
+my_installed_packages <- reqd_packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(reqd_packages[!installed_packages])
+}
+invisible(lapply(reqd_packages, library, character.only = TRUE))
+
+## confint migrated to stats package in R 4.4.0, and can be used to calculate confidence intervals in ProcWAS. If using R < 4.4.0, must manually load MASS package
+## library(MASS)
+
 # install ProcWAS package
-install.packages("devtools")
 devtools::install_github("uelandte/ProcWAS")
 library(ProcWAS)
 ```
 
+## Procedure Code Mapping
+This package uses the Clinical Classifications Software Refined (CCSR) from the Agency for Healthcare Research and Quality (AHRQ). This framework includes 320 procedure categories that have previously been mapped from over 80,000 ICD-10-PCS codes. We limit focus to "major therapeutic" procedures, which are those that often occur in an operating room and are performed with therapeutic intent.
+
+To complement the existing ICD-10-PCS to CCSR map, we developed a file for mapping CPT-4 codes to CCSR categories for major therapeutic procedures.
+
+For additional information on the CCSR, see https://hcup-us.ahrq.gov/toolssoftware/ccsr/ccs_refined.jsp
+
 ## Tutorial
 
-This walks through a demonstration of using the ProcWAS package for simulated data
+This walks through a demonstration of using the ProcWAS package for simulated data.
+
+A ProcWAS requires 2 data frames
+1. A data frame of source codes (ICD-10-PCS and CPT-4 codes) along with dates of the procedure.
+2. A data frame of covariates (e.g. age, sex, genotype, genetic principal components).
+
+The workflow includes steps to map the source codes to CCSR categories, reshape the data frame to a wider format, merge the phenotypes data with the covariates data, applying sex-specific exclusions, and performing the regression.
+
+First we will generate a data frame of source codes (ICD-10-PCS and CPT-4 codes) along with dates of the procedure.
 
 ```{r example}
 library(ProcWAS)
@@ -53,12 +80,16 @@ source_codes_df <- ProcWAS::icd10_cpt4_source_to_ccsr   %>%
 head(source_codes_df)
 ```
 
+Next, we use the create_ccsr_phenotypes function to 1) map the source codes to CCSR categories and 2) reshape the data frame to a wider format. If there are individuals present in the source code data frame which do not have any mapped CCSR categories, a message is printed reminding the user that these individuals will be dropped from the phenotypes data frame and will need to be added later in the covariates data frame.
+
 ```{r example2}
 # Map source codes to CCSR categories and reshape to wider
 phenotypes_df <- create_ccsr_phenotypes(source_codes_df = source_codes_df)
 
 head(phenotypes_df)
 ```
+
+In the example ProcWAS, we will use covarates of age, sex, and a logical column indicating whether the individual has our "variant of interest". 
 
 ```{r example3}
 # Create covariates data frame. Some of the individuals in the covariates data frame are not present in phenotypes data frame
@@ -72,19 +103,26 @@ covariates_df <- tibble(
 head(covariates_df)
 ```
 
+When merging the wider phenotypes data frame with the covariates data frame, the default behavior is to append individuals present in the covariates data frame but not in the phenotypes data frame as controls. This can be changed by setting the append_cov_without_pheno_as_controls argument to FALSE.
+
 ```{r example4}
 # merge pheno with covariates
-pheno_cov_df <- merge_pheno_with_cov(phenotypes_df = phenotypes_df,
-                                      covariates_df = covariates_df)  %>% 
-# create signal for CAR007
+pheno_cov_df <- merge_pheno_with_full_pop_cov(phenotypes_df = phenotypes_df,
+                                              covariates_df = covariates_df,
+                                              append_cov_without_pheno_as_controls = TRUE)  %>% 
+# create artificial signal for CAR007 CCSR category
 mutate(has_my_variant_of_interest = ifelse(CAR007 == TRUE & runif(n()) < 0.4, TRUE, has_my_variant_of_interest))
 ```
+
+Sex-specific procedures can be excluded from the analysis by providing the name of the sex column in the covariates data frame.
 
 ```{r example5}
 # exclude sex-specific procedures
 phewas_df <- apply_sex_specific_exclusions(phewas_df = pheno_cov_df,
                                                    name_of_sex_column = "sex")
 ```
+
+The regression models are fit using the phewas_ext function.
 
 ```{r example6}
 results <- phewas_ext(data = phewas_df, 
@@ -95,6 +133,7 @@ results <- phewas_ext(data = phewas_df,
                      cores = 1)
 ```
 
+Generating Manhattan plots for the results can be done using the plotManhattan function.
 
 ```{r manhattan, echo = FALSE, out.width = "80%"}
 manhattan <- plotManhattan(results,

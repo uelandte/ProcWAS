@@ -4,15 +4,6 @@ Version: 0.1
 Author: Thomas Ueland
 Description: This package adapts functions from the PheWAS package to perform a procedure-wide association study (ProcWAS). 
 License: GPL-3
-Depends:
-    dplyr,
-    ggplot2(>= 2.2.0),
-    parallel,
-    tidyr
-Imports: 
-    ggrepel,
-    glue,
-    MASS
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)

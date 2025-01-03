@@ -35,7 +35,7 @@ phewas_ext <-
     #Convert covariates to a list if it is not one
     if(class(covariates)!="list") { covariates=list(covariates)}
     
-    # only method supported for now is glm
+    # only method supported for now from original PheWAS documentation is glm
     association_method=phe_as_ext
     
     para=(cores>1)
