@@ -26,20 +26,6 @@ This walks through a demonstration of using the ProcWAS package for
 simulated data
 
 ``` r
-devtools::install_github("uelandte/ProcWAS")
-#> Using GitHub PAT from the git credential store.
-#> Downloading GitHub repo uelandte/ProcWAS@HEAD
-#> 
-#> ── R CMD build ─────────────────────────────────────────────────────────────────
-#> * checking for file 'C:\Users\uelante1\AppData\Local\Temp\RtmpAvghed\remotes58b022a35a11\uelandte-ProcWAS-4a96bb5/DESCRIPTION' ... OK
-#> * preparing 'ProcWAS':
-#> * checking DESCRIPTION meta-information ... OK
-#> * checking for LF line-endings in source and make files and shell scripts
-#> * checking for empty or unneeded directories
-#> * building 'ProcWAS_0.1.tar.gz'
-#> 
-#> Installing package into 'C:/Users/uelante1/Rpackages'
-#> (as 'lib' is unspecified)
 library(ProcWAS)
 #> Loading required package: dplyr
 #> 
@@ -150,4 +136,4 @@ results <- phewas_ext(data = phewas_df,
 #> Cleaning up...
 ```
 
-<img src="man/figures/README-manhattan-1.png" width="100%" /><img src="man/figures/README-manhattan-2.png" width="100%" />
+<img src="man/figures/README-manhattan-1.png" width="50%" />

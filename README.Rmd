@@ -37,7 +37,6 @@ library(ProcWAS)
 This walks through a demonstration of using the ProcWAS package for simulated data
 
 ```{r example}
-devtools::install_github("uelandte/ProcWAS")
 library(ProcWAS)
 
 # Set seed for reproducibility
@@ -97,12 +96,11 @@ results <- phewas_ext(data = phewas_df,
 ```
 
 
-```{r manhattan, echo = FALSE}
+```{r manhattan, echo = FALSE, out.width = "50%"}
 manhattan <- plotManhattan(results,
                            suggestive.line = NA,
                            significant.line = 0.05 / nrow(results),
                            annotate.level = 0.05 / nrow(results),
                            point.size = 2,
-                           annotate.size = 3.5)
-plot(manhattan)
+                           annotate.size = 2)
 ```
