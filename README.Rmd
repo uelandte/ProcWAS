@@ -1,0 +1,107 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# ProcWAS
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The goal of ProcWAS is to adapt existing functionality from a Phenome-wide Association Study (PheWAS) to procedures.
+
+
+## Installation
+
+You can install the development version of ProcWAS like so:
+
+``` {r install}
+# install ProcWAS package
+install.packages("devtools")
+devtools::install_github("uelandte/ProcWAS")
+library(ProcWAS)
+```
+
+## Tutorial
+
+This walks through a demonstration of using the ProcWAS package for simulated data
+
+```{r example}
+library(ProcWAS)
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Create source codes data frame
+source_codes_df <- ProcWAS::icd10_cpt4_source_to_ccsr   %>% 
+select(vocabulary, code)  %>% 
+slice_sample(n = 10000)  %>% 
+mutate(id = rep(1:1000, each = 10),
+       date = seq.Date(Sys.Date(), by = "-1 day", length.out = 10000)
+)
+
+head(source_codes_df)
+```
+
+```{r example}
+# Map source codes to CCSR categories and reshape to wider
+phenotypes_df <- create_ccsr_phenotypes(source_codes_df = source_codes_df)
+
+head(phenotypes_df)
+```
+
+```{r example}
+# Create covariates data frame. Some of the individuals in the covariates data frame are not present in phenotypes data frame
+covariates_df <- tibble(
+  id = 1:15000,
+  age = sample(18:65, 15000, replace = TRUE),
+  sex = sample(c("M", "F"), 15000, replace = TRUE),
+  has_my_variant_of_interest = sample(c(TRUE, FALSE), 15000, replace = TRUE)
+)
+
+head(covariates_df)
+```
+
+```{r example}
+# merge pheno with covariates
+pheno_cov_df <- merge_pheno_with_cov(phenotypes_df = phenotypes_df,
+                                      covariates_df = covariates_df)  %>% 
+# create signal for CAR007
+mutate(has_my_variant_of_interest = ifelse(CAR007 == TRUE & runif(n()) < 0.4, TRUE, has_my_variant_of_interest))
+```
+
+```{r example}
+# exclude sex-specific procedures
+phewas_df <- apply_sex_specific_exclusions(phewas_df = pheno_cov_df,
+                                                   name_of_sex_column = "sex")
+```
+
+```{r example}
+results <- phewas_ext(data = phewas_df, 
+                     phenotypes = stringr::str_subset(names(phewas_df), "^[A-Z]{3}[0-9]{3}$"), # extract column names with 3 uppercase letters followed by 3 digits consistent with CCSR naming 
+                     genotypes=c("has_my_variant_of_interest"),
+                     covariates=c("sex", "age"),
+                     additive.genotypes = FALSE,
+                     cores = 1)
+```
+
+
+```{r manhattan, echo = FALSE}
+manhattan <- plotManhattan(results,
+                           suggestive.line = NA,
+                           significant.line = 0.05 / nrow(results),
+                           annotate.level = 0.05 / nrow(results),
+                           point.size = 2,
+                           annotate.size = 3.5)
+plot(pressure)
+```
