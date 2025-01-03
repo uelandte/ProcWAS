@@ -65,6 +65,8 @@ First we will generate a data frame of source codes (ICD-10-PCS and CPT-4 codes)
 
 ```{r example}
 library(ProcWAS)
+library(dplyr)
+library(magrittr)
 
 # Set seed for reproducibility
 set.seed(123)
