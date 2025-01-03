@@ -1,8 +1,7 @@
 Package: ProcWAS
 Title: Procedure-wide Association Study 
 Version: 0.1
-Authors@R: 
-    Thomas Ueland
+Author: Thomas Ueland
 Description: This package adapts functions from the PheWAS package to perform a procedure-wide association study (ProcWAS). 
 License: GPL-3
 Depends:
