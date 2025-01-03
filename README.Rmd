@@ -143,6 +143,6 @@ manhattan <- plotManhattan(results,
                            significant.line = 0.05 / nrow(results),
                            annotate.level = 0.05 / nrow(results),
                            point.size = 2,
-                           size.x.labels = 5,
+                           size.x.labels = 6.5,
                            annotate.size = 3.5)
 ```
