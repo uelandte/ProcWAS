@@ -21,6 +21,7 @@ knitr::opts_chunk$set(
 ## Description
 
 The goal of the ProcWAS package is to adapt existing functionality from the Phenome-wide Association Study (PheWAS) package for procedural applications.
+The code in this package has been adapted from two existing packages: PheWAS (https://github.com/PheWAS/PheWAS/) and PedsPheWAS(https://github.com/monikagrabowska/PedsPheWAS)
 
 
 ## Installation
@@ -47,7 +48,7 @@ library(ProcWAS)
 ## Procedure Code Mapping
 This package uses the Clinical Classifications Software Refined (CCSR) from the Agency for Healthcare Research and Quality (AHRQ). This framework includes 320 procedure categories that have previously been mapped from over 80,000 ICD-10-PCS codes. We limit focus to "major therapeutic" procedures, which are those that often occur in an operating room and are performed with therapeutic intent.
 
-To complement the existing ICD-10-PCS to CCSR map, we developed a file for mapping CPT-4 codes to CCSR categories for major therapeutic procedures.
+To complement the existing ICD-10-PCS to CCSR code code, we developed a file for mapping CPT-4 codes to CCSR categories for major therapeutic procedures.
 
 For additional information on the CCSR, see https://hcup-us.ahrq.gov/toolssoftware/ccsr/ccs_refined.jsp
 
@@ -59,7 +60,7 @@ A ProcWAS requires 2 data frames
 1. A data frame of source codes (ICD-10-PCS and CPT-4 codes) along with dates of the procedure.
 2. A data frame of covariates (e.g. age, sex, genotype, genetic principal components).
 
-The workflow includes steps to map the source codes to CCSR categories, reshape the data frame to a wider format, merge the phenotypes data with the covariates data, applying sex-specific exclusions, and performing the regression.
+The workflow includes steps to map the source codes to CCSR categories, reshape the data frame to a wider format, merge the phenotypes data with the covariates data, apply sex-specific exclusions, and perform the regression.
 
 First we will generate a data frame of source codes (ICD-10-PCS and CPT-4 codes) along with dates of the procedure.
 
@@ -82,7 +83,7 @@ source_codes_df <- ProcWAS::icd10_cpt4_source_to_ccsr   %>%
 head(source_codes_df)
 ```
 
-Next, we use the create_ccsr_phenotypes function to 1) map the source codes to CCSR categories and 2) reshape the data frame to a wider format. If there are individuals present in the source code data frame which do not have any mapped CCSR categories, a message is printed reminding the user that these individuals will be dropped from the phenotypes data frame and will need to be added later in the covariates data frame.
+Next, we use the create_ccsr_phenotypes function to 1) map the source codes to CCSR categories and 2) reshape the data frame to a wider format. If there are individuals present in the source procedure code data frame which do not have any mapped CCSR categories, a message is printed reminding the user that these individuals will be dropped from the phenotypes data frame. To include them in the regression, they will need to be present in the covariates data frame.
 
 ```{r example2}
 # Map source codes to CCSR categories and reshape to wider
@@ -105,7 +106,7 @@ covariates_df <- tibble(
 head(covariates_df)
 ```
 
-When merging the wider phenotypes data frame with the covariates data frame, the default behavior is to append individuals present in the covariates data frame but not in the phenotypes data frame as controls. This can be changed by setting the append_cov_without_pheno_as_controls argument to FALSE.
+The covariates data frame should include all participants that qualify for study inclusion as either a case or a control. When merging the wider mapped phenotypes data frame with the covariates data frame, the default behavior is to append participants who are present in the covariates data frame but not in the phenotypes data frame as controls. This can be changed by setting the append_cov_without_pheno_as_controls argument to FALSE.
 
 ```{r example4}
 # merge pheno with covariates
@@ -135,7 +136,7 @@ results <- phewas_ext(data = phewas_df,
                      cores = 1)
 ```
 
-Generating Manhattan plots for the results can be done using the plotManhattan function.
+Manhattan plots for the results can be generated using the plotManhattan function.
 
 ```{r manhattan, echo = FALSE, out.width = "80%"}
 manhattan <- plotManhattan(results,

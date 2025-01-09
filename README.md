@@ -10,7 +10,9 @@
 
 The goal of the ProcWAS package is to adapt existing functionality from
 the Phenome-wide Association Study (PheWAS) package for procedural
-applications.
+applications. The code in this package has been adapted from two
+existing packages: PheWAS (<https://github.com/PheWAS/PheWAS/>) and
+PedsPheWAS(<https://github.com/monikagrabowska/PedsPheWAS>)
 
 ## Installation
 
@@ -42,8 +44,8 @@ mapped from over 80,000 ICD-10-PCS codes. We limit focus to “major
 therapeutic” procedures, which are those that often occur in an
 operating room and are performed with therapeutic intent.
 
-To complement the existing ICD-10-PCS to CCSR map, we developed a file
-for mapping CPT-4 codes to CCSR categories for major therapeutic
+To complement the existing ICD-10-PCS to CCSR code code, we developed a
+file for mapping CPT-4 codes to CCSR categories for major therapeutic
 procedures.
 
 For additional information on the CCSR, see
@@ -61,8 +63,8 @@ components).
 
 The workflow includes steps to map the source codes to CCSR categories,
 reshape the data frame to a wider format, merge the phenotypes data with
-the covariates data, applying sex-specific exclusions, and performing
-the regression.
+the covariates data, apply sex-specific exclusions, and perform the
+regression.
 
 First we will generate a data frame of source codes (ICD-10-PCS and
 CPT-4 codes) along with dates of the procedure.
@@ -93,21 +95,21 @@ source_codes_df <- ProcWAS::icd10_cpt4_source_to_ccsr   %>%
 
 head(source_codes_df)
 #>   vocabulary    code id       date
-#> 1      icd10 0V1P0ZJ  1 2025-01-03
-#> 2  cpt_hcpcs   0748T  1 2025-01-02
-#> 3      icd10 021K09R  1 2025-01-01
-#> 4  cpt_hcpcs   27745  1 2024-12-31
-#> 5      icd10 0FH203Z  1 2024-12-30
-#> 6      icd10 0F794ZZ  1 2024-12-29
+#> 1      icd10 0V1P0ZJ  1 2025-01-09
+#> 2  cpt_hcpcs   0748T  1 2025-01-08
+#> 3      icd10 021K09R  1 2025-01-07
+#> 4  cpt_hcpcs   27745  1 2025-01-06
+#> 5      icd10 0FH203Z  1 2025-01-05
+#> 6      icd10 0F794ZZ  1 2025-01-04
 ```
 
 Next, we use the create_ccsr_phenotypes function to 1) map the source
 codes to CCSR categories and 2) reshape the data frame to a wider
-format. If there are individuals present in the source code data frame
-which do not have any mapped CCSR categories, a message is printed
-reminding the user that these individuals will be dropped from the
-phenotypes data frame and will need to be added later in the covariates
-data frame.
+format. If there are individuals present in the source procedure code
+data frame which do not have any mapped CCSR categories, a message is
+printed reminding the user that these individuals will be dropped from
+the phenotypes data frame. To include them in the regression, they will
+need to be present in the covariates data frame.
 
 ``` r
 # Map source codes to CCSR categories and reshape to wider
@@ -159,8 +161,10 @@ head(covariates_df)
 #> 6     6    47 M     TRUE
 ```
 
-When merging the wider phenotypes data frame with the covariates data
-frame, the default behavior is to append individuals present in the
+The covariates data frame should include all participants that qualify
+for study inclusion as either a case or a control. When merging the
+wider mapped phenotypes data frame with the covariates data frame, the
+default behavior is to append participants who are present in the
 covariates data frame but not in the phenotypes data frame as controls.
 This can be changed by setting the append_cov_without_pheno_as_controls
 argument to FALSE.
@@ -199,7 +203,7 @@ results <- phewas_ext(data = phewas_df,
 #> Cleaning up...
 ```
 
-Generating Manhattan plots for the results can be done using the
-plotManhattan function.
+Manhattan plots for the results can be generated using the plotManhattan
+function.
 
 <img src="man/figures/README-manhattan-1.png" width="80%" />
