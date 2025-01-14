@@ -12,9 +12,9 @@
 
 apply_sex_specific_exclusions <- function(phewas_df, name_of_sex_column){
     # Check if the sex column contains only valid values
-  valid_sex_values <- c("M", "m", "F", "f", "Male", "male", "Female", "female")
+  valid_sex_values <- c("M", "m", "F", "f", "Male", "male", "Female", "female", "Intersex", "intersex", "None", "none", "Other", "other")
   if (!all(phewas_df[[name_of_sex_column]] %in% valid_sex_values)) {
-    stop("The sex column contains invalid values. Must be one of 'M', 'm', 'Male, 'male', 'F', 'f', 'Female', 'female'")
+    stop("The sex column contains invalid values. Must be one of 'M', 'm', 'Male, 'male', 'F', 'f', 'Female', 'female', 'Intersex', 'intersex', 'None', 'none', 'Other', 'other'")
   }
   
   phewas_sex_exclusions_df <- phewas_df %>% 
