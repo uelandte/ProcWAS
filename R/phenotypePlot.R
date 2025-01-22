@@ -30,7 +30,7 @@ phenotypePlot <-
            lc.labels=F,
            y.axis.interval=y.axis.interval) {
 
-    d=merge(d,ProcWAS::ccsr_phewas_plot_annotations_cleaned,by.x="phenotype",by.y="proc_code")
+    d=merge(d,ProcWAS::ccsr_procwas_plot_annotations,by.x="phenotype",by.y="proc_code")
 
     d=d[!is.na(d$groupnum),]
 

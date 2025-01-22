@@ -1,0 +1,135 @@
+---
+title: "Make Plotting Annotations"
+format: 
+  html:
+    toc: true
+    number-sections: true
+    code-fold: true
+    df-print: paged
+editor: source
+execute: 
+  echo: true
+  warning: false
+---
+
+```{r, include=FALSE}
+options(width = "250")
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse,
+       glue,
+       rio,
+       janitor, # clean_names(), tabyl()
+       here # drop a .here file to wherever you want parent directory to be 
+       ) 
+```
+
+# Description
+- This notebook generates the ProcWAS plot annotations file 
+
+
+# Import
+
+```{r}
+icd10_cpt_mapped_df <- import(here("data", "ccsr_source", "icd10_cpt4_source_to_ccsr.xlsx"), col_types = "text", sheet = 1)  %>% 
+clean_names()
+
+glimpse(icd10_cpt_mapped_df)
+
+```
+
+```{r}
+clinical_domain_df <- import(here("data", "ccsr_source", "icd10", "PRCCSR-v2024-1.csv"), col_types = "text")  %>% 
+clean_names()  %>% 
+distinct(prccsr, prccsr_description, clinical_domain)  %>% 
+mutate(across(prccsr, ~str_remove_all(., "'")))
+
+glimpse(clinical_domain_df)
+
+```
+
+```{r}
+colors_df <- tibble(
+  groupnum = 1:21,
+  colors  = c("blue", "darkcyan", "brown", "darkorange1", "magenta", 
+                       "darkseagreen4", "red", "coral4", "chartreuse4", "black", 
+                       "royalblue4", "firebrick", "darkolivegreen", "lightpink", 
+                       "lightcoral", "darkkhaki", "sienna", "mediumpurple", 
+                       "darkgoldenrod", "lightgreen", "lightgray")
+)
+
+glimpse(colors_df)
+```
+
+
+```{r}
+tmp_procwas_plot_annotations_df <- icd10_cpt_mapped_df  %>% 
+distinct(prccsr, prccsr_description)  %>% 
+# there is one row in the downloaded PRCCSR-v2024-1.csv where the name is truncated
+mutate(prccsr_description = case_when(
+  prccsr_description == "GI system endoscopic therapeutic proce" ~ "GI system endoscopic therapeutic procedures",
+  TRUE ~ prccsr_description)
+)  %>% 
+left_join(clinical_domain_df, by = c("prccsr", "prccsr_description"))  %>% 
+arrange(prccsr)  %>% 
+mutate(groupnum = dense_rank(clinical_domain))  %>% 
+left_join(colors_df, by = "groupnum")
+
+tmp_procwas_plot_annotations_df  %>% 
+glimpse()
+```
+
+
+```{r}
+procwas_plot_annotations_df <- tmp_procwas_plot_annotations_df  %>% 
+# clean clinical domain names to fit better in plots
+mutate(clinical_domain = case_when(
+    clinical_domain == "Administration of Therapeutic Substances" ~ "Admin of Tx Substances",
+    clinical_domain == "Cardiovascular Procedures" ~ "Cardiovascular",
+    clinical_domain == "Central Nervous System Procedures" ~ "Central Nervous System",
+    clinical_domain == "Endocrine Procedures" ~ "Endocrine",
+    clinical_domain == "Ear, Nose, and Throat Procedures" ~ "ENT",
+    clinical_domain == "Extracorporeal or Systemic Assistance and Performance" ~ "Extracorporeal Assistance",
+    clinical_domain == "Extracorporeal or Systemic Therapies" ~ "Extracorporeal Tx",
+    clinical_domain == "Eye Procedures" ~ "Eye",
+    clinical_domain == "Female Reproductive System Procedures" ~ "Female Reproductive",
+    clinical_domain == "Gastrointestinal System Procedures" ~ "Gastrointestinal",
+    clinical_domain == "General Region Procedures" ~ "General Region",
+    clinical_domain == "Hepatobiliary and Pancreas Procedures" ~ "HPB",
+    clinical_domain == "Lymphatic and Hemic System Procedures" ~ "Lymph or Heme",
+    clinical_domain == "Male Reproductive System Procedures" ~ "Male Reproductive",
+    clinical_domain == "Musculoskeletal, Subcutaneous Tissue, and Fascia Procedures" ~ "MSK SubQ and Fascia",
+    clinical_domain == "Pregnancy-Related Procedures" ~ "Pregnancy",
+    clinical_domain == "Peripheral Nervous System Procedures" ~ "Peripheral Nervous System",
+    clinical_domain == "Radiation Therapy" ~ "XRT",
+    clinical_domain == "Respiratory System Procedures" ~ "Respiratory",
+    clinical_domain == "Skin and Breast Procedures" ~ "Skin and Breast",
+    clinical_domain == "Urinary System Procedures" ~ "Urinary"
+)
+      )  %>% 
+# define other group
+mutate(clinical_domain = case_when(
+    clinical_domain %in% c("XRT", "Extracorporeal Assistance", "Extracorporeal Tx", "Admin of Tx Substances") ~ "Other",
+      TRUE ~ clinical_domain)
+       ) %>% 
+mutate(groupnum = case_when(
+    clinical_domain == "Other" ~ 17,
+    TRUE ~ groupnum)
+       )  %>% 
+mutate(colors = case_when(
+    clinical_domain == "Other" ~ "red",
+    TRUE ~ colors)
+       )  %>% 
+# rename columns
+rename(proc_code = prccsr,
+       proc_code_description = prccsr_description)
+
+head(procwas_plot_annotations_df)
+```
+
+
+# Export
+```{r}
+procwas_plot_annotations_df  %>% 
+export(here("data", "ccsr_source", "ccsr_procwas_plot_annotations.xlsx"))
+```

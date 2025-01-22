@@ -48,7 +48,9 @@ library(ProcWAS)
 ## Procedure Code Mapping
 This package uses the Clinical Classifications Software Refined (CCSR) from the Agency for Healthcare Research and Quality (AHRQ). This framework includes 320 procedure categories that have previously been mapped from over 80,000 ICD-10-PCS codes. We limit focus to "major therapeutic" procedures, which are those that often occur in an operating room and are performed with therapeutic intent.
 
-To complement the existing ICD-10-PCS to CCSR code code, we developed a file for mapping CPT-4 codes to CCSR categories for major therapeutic procedures.
+To complement the existing ICD-10-PCS to CCSR code code, we developed a file for mapping CPT-4 codes to CCSR categories for major therapeutic procedures. 
+
+More information about the wrangling and mapping process can be found in the "code_to_wrangle_ahrq_files" folder  
 
 For additional information on the CCSR, see https://hcup-us.ahrq.gov/toolssoftware/ccsr/ccs_refined.jsp
 
@@ -57,10 +59,10 @@ For additional information on the CCSR, see https://hcup-us.ahrq.gov/toolssoftwa
 This walks through a demonstration of using the ProcWAS package for simulated data.
 
 A ProcWAS requires 2 data frames
-1. A data frame of source codes (ICD-10-PCS and CPT-4 codes) along with dates of the procedure.
+1. A data frame of source codes (ICD-10-PCS and CPT-4 codes) along with dates of the procedure. Unlike PheWAS, dates must be included.
 2. A data frame of covariates (e.g. age, sex, genotype, genetic principal components).
 
-The workflow includes steps to map the source codes to CCSR categories, reshape the data frame to a wider format, merge the phenotypes data with the covariates data, apply sex-specific exclusions, and perform the regression.
+The workflow includes steps to map the source codes to CCSR categories, reshape the data frame to a wider format, merge the phenotypes data with the covariates data, apply sex-specific exclusions, and perform the ProcWAS regression.
 
 First we will generate a data frame of source codes (ICD-10-PCS and CPT-4 codes) along with dates of the procedure.
 
@@ -85,7 +87,7 @@ head(source_codes_df)
 
 Next, we use the create_ccsr_phenotypes function to 1) map the source codes to CCSR categories and 2) reshape the data frame to a wider format. If there are individuals present in the source procedure code data frame which do not have any mapped CCSR categories, a message is printed reminding the user that these individuals will be dropped from the phenotypes data frame. To include them in the regression, they will need to be present in the covariates data frame.
 
-```{r example2}
+```{r createphenotypes}
 # Map source codes to CCSR categories and reshape to wider
 phenotypes_df <- create_ccsr_phenotypes(source_codes_df = source_codes_df)
 
@@ -94,7 +96,7 @@ head(phenotypes_df)
 
 In the example ProcWAS, we will use covarates of age, sex, and a logical column indicating whether the individual has our "variant of interest". 
 
-```{r example3}
+```{r makecov}
 # Create covariates data frame. Some of the individuals in the covariates data frame are not present in phenotypes data frame
 covariates_df <- tibble(
   id = 1:15000,
@@ -108,7 +110,7 @@ head(covariates_df)
 
 The covariates data frame should include all participants that qualify for study inclusion as either a case or a control. When merging the wider mapped phenotypes data frame with the covariates data frame, the default behavior is to append participants who are present in the covariates data frame but not in the phenotypes data frame as controls. This can be changed by setting the append_cov_without_pheno_as_controls argument to FALSE.
 
-```{r example4}
+```{r merge}
 # merge pheno with covariates
 pheno_cov_df <- merge_pheno_with_full_pop_cov(phenotypes_df = phenotypes_df,
                                               covariates_df = covariates_df,
@@ -119,7 +121,7 @@ mutate(has_my_variant_of_interest = ifelse(CAR007 == TRUE & runif(n()) < 0.4, TR
 
 Sex-specific procedures can be excluded from the analysis by providing the name of the sex column in the covariates data frame.
 
-```{r example5}
+```{r sexspec}
 # exclude sex-specific procedures
 phewas_df <- apply_sex_specific_exclusions(phewas_df = pheno_cov_df,
                                                    name_of_sex_column = "sex")
@@ -127,7 +129,7 @@ phewas_df <- apply_sex_specific_exclusions(phewas_df = pheno_cov_df,
 
 The regression models are fit using the phewas_ext function.
 
-```{r example6}
+```{r results}
 results <- phewas_ext(data = phewas_df, 
                      phenotypes = stringr::str_subset(names(phewas_df), "^[A-Z]{3}[0-9]{3}$"), # extract column names with 3 uppercase letters followed by 3 digits consistent with CCSR naming 
                      genotypes = c("has_my_variant_of_interest"),
@@ -138,7 +140,7 @@ results <- phewas_ext(data = phewas_df,
 
 Manhattan plots for the results can be generated using the plotManhattan function.
 
-```{r manhattan, echo = FALSE, out.width = "80%"}
+```{r manhattan, echo = TRUE, out.width = "80%"}
 manhattan <- plotManhattan(results,
                            suggestive.line = NA,
                            significant.line = 0.05 / nrow(results),

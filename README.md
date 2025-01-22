@@ -48,6 +48,9 @@ To complement the existing ICD-10-PCS to CCSR code code, we developed a
 file for mapping CPT-4 codes to CCSR categories for major therapeutic
 procedures.
 
+More information about the wrangling and mapping process can be found in
+the “code_to_wrangle_ahrq_files” folder
+
 For additional information on the CCSR, see
 <https://hcup-us.ahrq.gov/toolssoftware/ccsr/ccs_refined.jsp>
 
@@ -57,14 +60,14 @@ This walks through a demonstration of using the ProcWAS package for
 simulated data.
 
 A ProcWAS requires 2 data frames 1. A data frame of source codes
-(ICD-10-PCS and CPT-4 codes) along with dates of the procedure. 2. A
-data frame of covariates (e.g. age, sex, genotype, genetic principal
-components).
+(ICD-10-PCS and CPT-4 codes) along with dates of the procedure. Unlike
+PheWAS, dates must be included. 2. A data frame of covariates (e.g. age,
+sex, genotype, genetic principal components).
 
 The workflow includes steps to map the source codes to CCSR categories,
 reshape the data frame to a wider format, merge the phenotypes data with
 the covariates data, apply sex-specific exclusions, and perform the
-regression.
+ProcWAS regression.
 
 First we will generate a data frame of source codes (ICD-10-PCS and
 CPT-4 codes) along with dates of the procedure.
@@ -95,12 +98,12 @@ source_codes_df <- ProcWAS::icd10_cpt4_source_to_ccsr   %>%
 
 head(source_codes_df)
 #>   vocabulary    code id       date
-#> 1      icd10 0V1P0ZJ  1 2025-01-09
-#> 2  cpt_hcpcs   0748T  1 2025-01-08
-#> 3      icd10 021K09R  1 2025-01-07
-#> 4  cpt_hcpcs   27745  1 2025-01-06
-#> 5      icd10 0FH203Z  1 2025-01-05
-#> 6      icd10 0F794ZZ  1 2025-01-04
+#> 1      icd10 0V1P0ZJ  1 2025-01-22
+#> 2  cpt_hcpcs   0748T  1 2025-01-21
+#> 3      icd10 021K09R  1 2025-01-20
+#> 4  cpt_hcpcs   27745  1 2025-01-19
+#> 5      icd10 0FH203Z  1 2025-01-18
+#> 6      icd10 0F794ZZ  1 2025-01-17
 ```
 
 Next, we use the create_ccsr_phenotypes function to 1) map the source
@@ -205,5 +208,15 @@ results <- phewas_ext(data = phewas_df,
 
 Manhattan plots for the results can be generated using the plotManhattan
 function.
+
+``` r
+manhattan <- plotManhattan(results,
+                           suggestive.line = NA,
+                           significant.line = 0.05 / nrow(results),
+                           annotate.level = 0.05 / nrow(results),
+                           point.size = 2,
+                           size.x.labels = 6.5,
+                           annotate.size = 3.5)
+```
 
 <img src="man/figures/README-manhattan-1.png" width="80%" />

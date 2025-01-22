@@ -1,0 +1,203 @@
+---
+title: "Download AHRQ Raw Mapping"
+format: 
+  html:
+    toc: true
+    number-sections: true
+    code-fold: true
+    df-print: paged
+editor: source
+execute: 
+  echo: true
+  warning: false
+---
+
+```{r, include=FALSE}
+options(width = "250")
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse,
+       glue,
+       rio,
+       janitor, 
+       here 
+       ) 
+```
+
+# Description
+- This notebook downloads the raw procedure mapping files from AHRQ and from Athena and wrangles them for use in our mapping process. 
+
+# Notes
+- Some of these functions were taken from https://github.com/vcastro/CCS/blob/master/data-raw/CCS_PCS.R such as expand_cpt_hcpcs_range
+- May need to change directory structure depending on your specific setup. Mine has subfolders of "data", "ccsr_source" to download files to 
+- The versions of the AHRQ mapping used are v2024-01 
+
+# Download Files
+```{r}
+download_extract <- function (url, exdir, files) {
+  
+  temp <- tempfile()
+  download.file(url, temp)
+  unzip(temp, exdir = exdir, junkpaths = TRUE, files = files)
+  
+}
+
+```
+
+```{r}
+# icd10-pcs for ccsr
+download_extract(url = "https://hcup-us.ahrq.gov/toolssoftware/ccsr/PRCCSR_v2024-1.zip",
+                 exdir = here("data", "ccsr_source", "icd10"),
+                 files = c("PRCCSR-v2024-1.csv"))
+```
+
+```{r}
+# icd10 procedure classes
+
+download_extract(url = "https://hcup-us.ahrq.gov/toolssoftware/procedureicd10/PClassR_v2024-1.zip",
+                 exdir = here("data", "ccsr_source", "icd10"),
+                 files = c("PClassR_v2024-1_03072024.csv"))
+```
+
+```{r}
+# cpt procedure flags
+download_extract(url = "https://hcup-us.ahrq.gov/toolssoftware/surgeryflags_svcproc/SurgeryFlags_Services_Procedures_v2024-1.zip",
+                 exdir = here("data", "ccsr_source", "cpt_hcpcs"),
+                 files = c("SurgeryFlags_Services_Procedures_v2024-1_061324.csv"))
+
+```
+
+
+# Instructions to download CPT descriptions
+CPT descriptions downloaded from Athena
+1) First go to vocabulary list at https://athena.ohdsi.org/vocabulary/list 
+2) Then check the specific mapping filesthat you want (CPT4, HCPCS) and click "Download Vocabularies"
+3) This will be sent via email. Follow the instructions to reconstitute CPT4. The “CONCEPT.csv” file will have the code and the corresponding description
+
+
+# Wrangle CPT
+For the CPT vocab, we needed to manually develop a mapping file to convert them to CCSR categories.
+
+```{r}
+cpt_athena_df <- import(here("data", "ccsr_source", "cpt_hcpcs", "CONCEPT.csv"))   %>%
+clean_names()  %>% 
+filter(vocabulary_id == "CPT4")
+
+glimpse(cpt_athena_df)
+
+```
+
+```{r}
+expand_cpt_hcpcs_range <- function (code_range) {
+  
+  r <- str_split(code_range, "-", n = 2) %>% unlist() %>% setNames(c("start", "stop"))
+  
+  if (!str_detect(r["start"], "[[:alpha:]]") & !str_detect(r["stop"], "[[:alpha:]]")) {
+    str_pad(as.character(seq(r["start"], r["stop"], 1)), 5, pad="0")
+  } else if (r["start"] == r["stop"]) {
+    r["start"]
+  } else if (str_detect(str_sub(code_range, 5,5), "[[:alpha:]]")) {
+    str_c(str_pad(as.character(seq(str_sub(r["start"], 1, 4), str_sub(r["stop"], 1, 4), 1)), 4, pad="0"), str_sub(r["start"], 5, 5))
+  } else {
+    NA
+  }
+  
+}
+```
+
+```{r}
+# cpt / hcpcs identify major therapeutic 
+tmp_cpt_hcpcs_flags_df <- import(here("data", "ccsr_source", "cpt_hcpcs", "SurgeryFlags_Services_Procedures_v2024-1_061324.csv"), skip = 1)    %>%
+clean_names()   %>%
+rename(code_range = cpt_code_range)   %>%
+mutate(across(code_range, ~str_remove_all(., "'")))   %>%
+mutate(code = map(code_range, expand_cpt_hcpcs_range))   %>%
+unnest(cols = c(code))
+  
+glimpse(tmp_cpt_hcpcs_flags_df)
+
+```
+
+```{r}
+cpt_hcpcs_flags_df <- tmp_cpt_hcpcs_flags_df   %>%
+mutate(vocabulary = "cpt_hcpcs")   %>%
+mutate(is_major_therapeutic = case_when(surgery_flag == 2 ~ TRUE,
+                                        !is.na(surgery_flag) ~ FALSE))    %>%
+select(vocabulary, code, is_major_therapeutic)  %>% 
+rename(concept_code = code)
+
+glimpse(cpt_hcpcs_flags_df)
+```
+
+```{r}
+# merge in cpt codes that correspond to major therapeutic
+major_therapeutic_cpt_hcpcs_df <- cpt_hcpcs_flags_df  %>% 
+filter(is_major_therapeutic == TRUE)  %>% 
+left_join(cpt_athena_df, by = "concept_code")    %>% 
+select(vocabulary, concept_code, concept_name, is_major_therapeutic)
+
+glimpse(major_therapeutic_cpt_hcpcs_df)
+
+```
+
+```{r}
+# # uncomment to export this as a file. We will use this to manually map the codes to CCSR categories
+# major_therapeutic_cpt_hcpcs_df   %>%
+# export(here("data", "ccsr_source", "major_therapeutic_cpt_hcpcs_for_cssr_for_mapping.xlsx"))
+```
+
+
+# Wrangle ICD10
+For ICD-10-PCS, the file to map to CCSR categories is already provided by AHRQ.
+
+```{r}
+tmp_icd10_ccsr_df <- import(here("data", "ccsr_source", "icd10", "PRCCSR-v2024-1.csv"))   %>%
+  clean_names() %>%
+  mutate(vocabulary = "icd10")     %>%
+  rename(code = icd_10_pcs)
+  
+  
+glimpse(tmp_icd10_ccsr_df)
+```
+
+
+```{r}
+tmp2_icd10_ccsr_df <- tmp_icd10_ccsr_df   %>%
+mutate(across(c(code, prccsr), ~str_remove_all(., "'")))   %>%
+select(code, vocabulary, prccsr, prccsr_description)
+
+glimpse(tmp2_icd10_ccsr_df)
+
+```
+
+
+```{r}
+# Wrangle Procedure Classes / Surgery Flags
+icd10_major_therapeutic_df <- import(here("data", "ccsr_source", "icd10", "PClassR_v2024-1_03072024.csv"), skip = 1)   %>%
+  clean_names()   %>%
+  mutate(vocabulary = "icd10")   %>%
+  mutate(is_major_therapeutic = case_when(procedure_class == 4 ~ TRUE,
+                                          !is.na(procedure_class) ~ FALSE))   %>%
+  filter(is_major_therapeutic == TRUE)   %>%
+  select(vocabulary, icd_10_pcs_code, icd_10_pcs_code_description, is_major_therapeutic)   %>%
+  rename(code = icd_10_pcs_code,
+         description = icd_10_pcs_code_description)   %>%
+  mutate(across(code, ~str_remove_all(., "'")))
+  
+glimpse(icd10_major_therapeutic_df)
+```
+
+```{r}
+# merge in code descriptions
+icd10_ccsr_df <- icd10_major_therapeutic_df  %>% 
+left_join(tmp2_icd10_ccsr_df, by = c("vocabulary", "code"))  %>% 
+mutate(order = "primary") # for the icd10 map it is just a 1:1 mapping so every code has a corresponding prccsr. C/C the cpt map where some procs are primary and some are supporting
+
+glimpse(icd10_ccsr_df)
+```
+
+```{r}
+# Export
+icd10_ccsr_df   %>%
+export(here("data", "ccsr_source", "icd10", "major_therapeutic_icd10_for_ccsr_mapped.xlsx"))
+```

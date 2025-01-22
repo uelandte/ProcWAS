@@ -1,0 +1,101 @@
+---
+title: "Clean Mapped Procedure Categories"
+format: 
+  html:
+    toc: true
+    number-sections: true
+    code-fold: true
+    df-print: paged
+editor: source
+execute: 
+  echo: true
+  warning: false
+---
+
+```{r, include=FALSE}
+options(width = "250")
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse,
+       glue,
+       rio,
+       janitor, 
+       here 
+       ) 
+```
+
+# Description
+- This notebook takes the two source procedure code mapping files (manually generated CPT4 -> CCSR and the ICD10 -> CCSR from AHRQ), cleans them, and merges them into a single file
+
+# Notes
+- For a description of the mapping algorthm for CPT4, see the accompanying image in the folder
+
+
+# Import
+
+```{r}
+tmp_cpt_mapped_df <- import(here("data", "ccsr_source", "cpt_hcpcs", "major_therapeutic_cpt_hcpcs_for_cssr_mapped.xlsx"), col_types = "text", sheet = 1)  %>% 
+clean_names()
+
+glimpse(tmp_cpt_mapped_df)
+
+```
+
+
+```{r}
+icd10_mapped_df <- import(here("data", "ccsr_source", "icd10", "major_therapeutic_icd10_for_ccsr_mapped.xlsx"), col_types = "text", sheet = 1)  %>% 
+clean_names()  
+
+glimpse(icd10_mapped_df)
+
+```
+
+```{r}
+clinical_domain_df <- import(here("data", "ccsr_source", "ccsr_category_clinical_domain_groups.xlsx"))  %>% 
+clean_names()  %>% 
+rename(prccsr = ccsr_category,
+       prccsr_description = ccsr_category_description)
+
+
+glimpse(clinical_domain_df)
+
+```
+
+
+# Clean and reshape CPT map
+
+```{r}
+cpt_mapped_df <- tmp_cpt_mapped_df  %>% 
+pivot_longer(cols = contains("ccsr_category"),
+             names_to = c(".value", "order"),
+             names_pattern = "ccsr_category_(.*)_(.)")  %>% 
+filter(!is.na(code))  %>% # if no secondary procedures documented, then remove that row
+filter(code != "unable_to_map")  %>% 
+mutate(order = case_when(
+    order == "1" ~ "primary",
+    order %in% c("2", "3", "4", "5") ~ "supporting")
+)  %>% 
+rename(prccsr = code,
+       prccsr_description = description,
+       code = concept_code,
+       description = concept_name)
+
+glimpse(cpt_mapped_df)
+```
+
+# Merge CPT and ICD10
+
+```{r}
+icd10_cpt_mapped_df <- icd10_mapped_df  %>%
+bind_rows(cpt_mapped_df)
+
+glimpse(icd10_cpt_mapped_df)
+
+```
+
+
+# Export
+```{r}
+icd10_cpt_mapped_df  %>% 
+export(here("data", "ccsr_source", "icd10_cpt4_source_to_ccsr.xlsx"))
+```
